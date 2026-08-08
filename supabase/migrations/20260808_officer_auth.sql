@@ -107,13 +107,19 @@ begin
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password,
     email_confirmed_at, created_at, updated_at,
-    raw_app_meta_data, raw_user_meta_data, is_super_admin
+    raw_app_meta_data, raw_user_meta_data, is_super_admin,
+    -- ⚠️ คอลัมน์โทเคนต้องเป็น '' ไม่ใช่ NULL
+    -- GoTrue อ่านเข้าตัวแปร string ของ Go ถ้าเจอ NULL จะคืน
+    -- "Database error querying schema" ตอนล็อกอิน ซึ่งดูเหมือนรหัสผ่านผิด
+    confirmation_token, recovery_token, email_change_token_new, email_change,
+    email_change_token_current, phone_change, phone_change_token, reauthentication_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
     v_email, extensions.crypt(p_password, extensions.gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    jsonb_build_object('full_name', p_full_name), false
+    jsonb_build_object('full_name', p_full_name), false,
+    '', '', '', '', '', '', '', ''
   );
 
   -- GoTrue ต้องมีแถวใน identities ด้วย; คอลัมน์ email เป็น generated จึงไม่ต้องใส่

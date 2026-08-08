@@ -59,12 +59,33 @@ export async function login(_prevState, formData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data?.user) {
-    await recordAttempt(email, ip, false);
+    // แยกให้ออกระหว่าง "กรอกรหัสผิด" กับ "ระบบพัง"
+    // ถ้าเป็นระบบพัง ห้ามนับเข้า rate limit เพราะไม่ใช่ความผิดผู้ใช้
+    // และห้ามบอกว่า "รหัสผ่านไม่ถูกต้อง" เพราะจะไล่ตามผิดจุดกันทั้งวัน
+    const isCredentialError =
+      error?.status === 400 ||
+      /invalid[_ ]login|invalid[_ ]credentials|invalid grant/i.test(error?.message || '');
+
     await logAudit({
       actorEmail: email,
       action: 'auth.login_failed',
-      detail: { reason: error?.message || 'unknown' },
+      detail: {
+        reason: error?.message || 'unknown',
+        kind: isCredentialError ? 'credentials' : 'system',
+        status: error?.status ?? null,
+      },
     });
+
+    if (!isCredentialError) {
+      console.error('[login] ระบบยืนยันตัวตนขัดข้อง:', error?.message || error);
+      return {
+        error:
+          'ระบบยืนยันตัวตนขัดข้อง ไม่ใช่เพราะรหัสผ่านผิด — ' +
+          'ผู้ดูแลโปรดดูรายละเอียดที่ /admin/audit หรือ Logs ของ Supabase',
+      };
+    }
+
+    await recordAttempt(email, ip, false);
     const left = await remainingAttempts(email);
     return {
       error:
