@@ -3,11 +3,21 @@ import LoginForm from './LoginForm';
 
 export const metadata = { title: 'เข้าสู่ระบบเจ้าหน้าที่ — CyberDrone Platform' };
 
+/** ข้อความเตือนที่ middleware ส่งมาทาง ?error= */
+const SETUP_ERRORS = {
+  config:
+    'ระบบยังตั้งค่าไม่ครบ — ผู้ดูแลต้องใส่ NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในค่า Environment Variables ก่อน',
+  unavailable:
+    'ตอนนี้ติดต่อระบบยืนยันตัวตนไม่ได้ กรุณาลองใหม่อีกครั้งในอีกสักครู่',
+};
+
 export default function LoginPage({ searchParams }) {
   const next =
     typeof searchParams?.next === 'string' && searchParams.next.startsWith('/admin')
       ? searchParams.next
       : '/admin';
+
+  const setupError = SETUP_ERRORS[searchParams?.error];
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-12">
@@ -17,6 +27,15 @@ export default function LoginPage({ searchParams }) {
         <p className="mb-6 mt-1.5 text-[13px] text-muted">
           เฉพาะเจ้าหน้าที่ที่ได้รับสิทธิ์ การเข้าใช้งานทุกครั้งถูกบันทึกไว้
         </p>
+
+        {setupError && (
+          <p
+            role="alert"
+            className="mb-4 rounded-lg border border-coral/40 bg-coral/10 px-3 py-2.5 text-[13px] text-coral"
+          >
+            {setupError}
+          </p>
+        )}
 
         <LoginForm next={next} />
 
