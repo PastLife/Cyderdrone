@@ -1,5 +1,7 @@
 import { requireOfficer } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { missingEnv } from '@/lib/config';
+import SetupNotice from '@/components/SetupNotice';
 import NewOfficerForm from './NewOfficerForm';
 import { setOfficerActive, resetOfficerPassword } from './actions';
 
@@ -16,6 +18,12 @@ function fmt(ts) {
 
 export default async function UsersPage() {
   const me = await requireOfficer('/admin/users');
+
+  // จัดการบัญชีต้องใช้ service role — ถ้ายังไม่ได้ตั้ง ให้บอกตรง ๆ ว่าขาดอะไร
+  const missing = missingEnv();
+  if (missing.length) {
+    return <SetupNotice missing={missing} what="หน้าจัดการผู้ใช้" />;
+  }
 
   const admin = createAdminClient();
   const { data: officers } = await admin

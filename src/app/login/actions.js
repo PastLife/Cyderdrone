@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logAudit, clientIp } from '@/lib/audit';
 import { checkLoginAllowed, recordAttempt, remainingAttempts } from '@/lib/loginGuard';
+import { missingEnv, SETUP_HINT } from '@/lib/config';
 
 /** ข้อความเดียวใช้กับทุกกรณีที่ล็อกอินไม่ผ่าน — ไม่บอกใบ้ว่าอีเมลมีอยู่จริงไหม */
 const GENERIC_ERROR = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
@@ -27,8 +28,27 @@ export async function login(_prevState, formData) {
     return { error: 'กรุณากรอกอีเมลและรหัสผ่าน' };
   }
 
+  // 0) ตั้งค่าครบไหม — ถ้าขาดต้องบอกให้ชัด ไม่ใช่ปล่อยให้แอปโยน exception ใส่หน้าผู้ใช้
+  //    ที่นี่เลือก "ล็อกไว้ก่อน" แทนการปล่อยผ่าน เพราะถ้าไม่มี service role key
+  //    ระบบจะนับการล็อกอินผิดไม่ได้และเขียน audit log ไม่ได้
+  //    ซึ่งเป็นสองอย่างที่ระบบราชการขาดไม่ได้
+  const missing = missingEnv();
+  if (missing.length) {
+    console.error('[login] ตั้งค่า env ไม่ครบ:', missing.join(', '));
+    return {
+      error: `ระบบยังตั้งค่าไม่ครบ (ขาด ${missing.join(', ')}) — ${SETUP_HINT}`,
+      locked: true,
+    };
+  }
+
   // 1) โดนล็อกอยู่หรือเปล่า
-  const gate = await checkLoginAllowed(email, ip);
+  let gate;
+  try {
+    gate = await checkLoginAllowed(email, ip);
+  } catch (err) {
+    console.error('[login] ตรวจ rate limit ไม่สำเร็จ:', err?.message || err);
+    return { error: 'ตอนนี้ระบบขัดข้อง กรุณาลองใหม่อีกครั้งในอีกสักครู่' };
+  }
   if (!gate.ok) {
     await logAudit({ actorEmail: email, action: 'auth.locked', detail: { ip } });
     return { error: gate.reason, locked: true };

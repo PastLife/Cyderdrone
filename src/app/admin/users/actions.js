@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireOfficer } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logAudit } from '@/lib/audit';
+import { missingEnv, SETUP_HINT } from '@/lib/config';
 
 /** เพิ่มเจ้าหน้าที่ใหม่ — สร้าง auth user + แถวใน officers ให้ครบในทีเดียว */
 export async function createOfficer(_prevState, formData) {
@@ -20,6 +21,11 @@ export async function createOfficer(_prevState, formData) {
   }
   if (password.length < 12) {
     return { error: 'รหัสผ่านต้องยาวอย่างน้อย 12 ตัวอักษร' };
+  }
+
+  const missing = missingEnv();
+  if (missing.length) {
+    return { error: `ระบบยังตั้งค่าไม่ครบ (ขาด ${missing.join(', ')}) — ${SETUP_HINT}` };
   }
 
   const admin = createAdminClient();

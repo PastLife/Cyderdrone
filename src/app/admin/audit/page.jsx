@@ -1,6 +1,8 @@
 import { requireOfficer } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AUDIT_ACTIONS } from '@/lib/audit';
+import { missingEnv } from '@/lib/config';
+import SetupNotice from '@/components/SetupNotice';
 
 export const metadata = { title: 'ประวัติการใช้งาน — ระบบเจ้าหน้าที่' };
 export const dynamic = 'force-dynamic';
@@ -39,6 +41,11 @@ function FilterChip({ current, value, label }) {
 
 export default async function AuditPage({ searchParams }) {
   await requireOfficer('/admin/audit');
+
+  const missing = missingEnv();
+  if (missing.length) {
+    return <SetupNotice missing={missing} what="ประวัติการใช้งาน" />;
+  }
 
   const page = Math.max(1, Number(searchParams?.page) || 1);
   const filter = String(searchParams?.action || '');
