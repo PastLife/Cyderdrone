@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --font-kanit: 'Kanit';
+  --font-mono: 'JetBrains Mono';
+}
+
+html,
+body {
+  background-color: #0b0e14;
+  color: #e2e8f0;
+}
+
+body {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: center top;
+}
+
+::selection {
+  background: rgba(0, 240, 255, 0.25);
+}
+
+*:focus-visible {
+  outline: 2px solid #00f0ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@layer components {
+  .glass {
+    @apply rounded-xl border border-line/80 bg-surface/60 backdrop-blur-sm;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-muted;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-line bg-base/70 px-3 py-2.5 text-sm text-ink
+           placeholder:text-muted/50 transition
+           focus:border-cyan/60 focus:bg-base focus:outline-none;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[13px] text-muted;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5
+           text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply btn bg-cyan text-base hover:bg-cyan/85 shadow-glow;
+  }
+
+  .btn-alert {
+    @apply btn bg-coral text-white hover:bg-coral/85 shadow-glow-coral;
+  }
+
+  .btn-ghost {
+    @apply btn border border-line text-ink hover:border-cyan/50 hover:text-cyan;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
