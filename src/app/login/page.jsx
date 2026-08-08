@@ -1,23 +1,29 @@
 import Link from 'next/link';
 import LoginForm from './LoginForm';
+import { missingEnv, SETUP_HINT } from '@/lib/config';
 
 export const metadata = { title: 'เข้าสู่ระบบเจ้าหน้าที่ — CyberDrone Platform' };
 
-/** ข้อความเตือนที่ middleware ส่งมาทาง ?error= */
-const SETUP_ERRORS = {
-  config:
-    'ระบบยังตั้งค่าไม่ครบ — ผู้ดูแลต้องใส่ NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในค่า Environment Variables ก่อน',
-  unavailable:
-    'ตอนนี้ติดต่อระบบยืนยันตัวตนไม่ได้ กรุณาลองใหม่อีกครั้งในอีกสักครู่',
-};
+// หน้านี้ต้องอ่านค่า env ตอนรันจริงเสมอ ห้าม prerender ไปเป็นหน้านิ่ง
+export const dynamic = 'force-dynamic';
 
 export default function LoginPage({ searchParams }) {
+  /*
+   * เดิมแบนเนอร์นี้อ่านจาก ?error=config ที่ middleware แปะมา
+   * ปัญหาคือพารามิเตอร์ค้างอยู่ใน URL ต่อให้แก้ env แล้วก็ยังขึ้นเตือนอยู่ดี
+   * จึงเปลี่ยนมาเช็กสถานะจริงตอนเรนเดอร์ — แก้ถูกเมื่อไหร่แบนเนอร์หายเอง
+   */
+  const missing = missingEnv();
+  const setupError = missing.length
+    ? `ระบบยังตั้งค่าไม่ครบ ขาด ${missing.join(', ')} — ${SETUP_HINT}`
+    : searchParams?.error === 'unavailable'
+      ? 'ตอนนี้ติดต่อระบบยืนยันตัวตนไม่ได้ กรุณาลองใหม่อีกครั้งในอีกสักครู่'
+      : null;
+
   const next =
     typeof searchParams?.next === 'string' && searchParams.next.startsWith('/admin')
       ? searchParams.next
       : '/admin';
-
-  const setupError = SETUP_ERRORS[searchParams?.error];
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-12">
