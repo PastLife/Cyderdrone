@@ -1,0 +1,48 @@
+import { NextResponse } from 'next/server';
+import { db, makeId } from '@/lib/db';
+import { getOfficer } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  // เบาะแสมีชื่อและช่องทางติดต่อผู้แจ้ง — เปิดให้เฉพาะเจ้าหน้าที่
+  const officer = await getOfficer();
+  if (!officer) {
+    return NextResponse.json({ error: 'ต้องเข้าสู่ระบบเจ้าหน้าที่ก่อน' }, { status: 401 });
+  }
+
+  const reports = [...db.reports].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return NextResponse.json({ reports });
+}
+
+export async function POST(request) {
+  const body = await request.json();
+
+  if (typeof body.lat !== 'number' || typeof body.lng !== 'number') {
+    return NextResponse.json({ error: 'ยังไม่ได้ระบุตำแหน่งที่พบโดรน' }, { status: 400 });
+  }
+  if (!body.seenAt) {
+    return NextResponse.json({ error: 'กรุณาระบุวัน-เวลาที่พบ' }, { status: 400 });
+  }
+
+  const anonymous = Boolean(body.anonymous);
+  const report = {
+    id: makeId('RPT'),
+    seenAt: body.seenAt,
+    lat: body.lat,
+    lng: body.lng,
+    direction: body.direction || 'ไม่แน่ใจ',
+    droneColor: body.droneColor || '',
+    droneSize: body.droneSize || 'unknown',
+    behavior: body.behavior || '',
+    anonymous,
+    reporterName: anonymous ? '' : body.reporterName || '',
+    contact: anonymous ? '' : body.contact || '',
+    media: body.media || '',
+    status: 'new',
+    createdAt: new Date().toISOString(),
+  };
+
+  db.reports.push(report);
+  return NextResponse.json({ report }, { status: 201 });
+}
